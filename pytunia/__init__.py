@@ -24,9 +24,11 @@ For debugging, the original command line interface is available as
 from .api import assemble, assemble_string
 from .classfile import ClassFile
 from .diagnostics import AssemblyError, Diagnostic
-from .main import VERSION
+from .main import VERSION as JASMIN_VERSION
 
-__version__ = "2.4"
+# the version of pytunia (JASMIN_VERSION is the version of Jasmin that
+# pytunia reproduces)
+__version__ = "0.1"
 
 __all__ = ["assemble", "assemble_string", "AssemblyError", "Diagnostic",
-           "ClassFile", "VERSION"]
+           "ClassFile", "JASMIN_VERSION"]

@@ -12,7 +12,11 @@ Python 3.9 or newer.
 
 ## Installation
 
-pytunia is not on PyPI yet. Until it is, install it from GitHub:
+```
+pip install pytunia
+```
+
+The latest development version can be installed from GitHub:
 
 ```
 pip install git+https://github.com/karlstroetmann/pytunia
@@ -238,4 +242,4 @@ python3 tools/extract_tables.py ../jasmin-2.4/src/jasmin
 ## License
 
 Jasmin is distributed under a BSD-style license, and pytunia keeps it; see
-[LICENSE.txt](LICENSE.txt), which also lists the credits.
+[LICENSE.txt](https://github.com/karlstroetmann/pytunia/blob/main/LICENSE.txt), which also lists the credits.

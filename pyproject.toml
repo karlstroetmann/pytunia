@@ -1,14 +1,45 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytunia"
-version = "2.4"
-description = "Jasmin, an assembler for the Java Virtual Machine, ported to Python"
+dynamic = ["version"]
+description = "Jasmin, the assembler for the Java Virtual Machine, in Python"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {file = "LICENSE.txt"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
+authors = [
+    {name = "Karl Stroetmann", email = "karl.stroetmann@dhbw-mannheim.de"},
+]
+keywords = ["jasmin", "assembler", "jvm", "java", "bytecode", "class file"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Operating System :: OS Independent",
+    "Programming Language :: Java",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Software Development :: Assemblers",
+    "Topic :: Software Development :: Compilers",
+]
+
+[project.urls]
+Homepage = "https://github.com/karlstroetmann/pytunia"
+Source = "https://github.com/karlstroetmann/pytunia"
+Issues = "https://github.com/karlstroetmann/pytunia/issues"
+"Original Jasmin" = "https://jasmin.sourceforge.net/"
 
 [tool.setuptools]
 packages = ["pytunia", "pytunia.jas"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pytunia.__version__"}
