@@ -158,6 +158,23 @@ python3 -m pytunia [-d <outpath>] [-g] [-e <encoding>] <file> [<file> ...]
 (`read_jasmin`, `error_count`, `get_class_name`, `write`). Errors are
 collected in its list `diagnostics`.
 
+### Syntax highlighting
+
+pytunia registers a lexer `pytunia` for [Pygments](https://pygments.org). It
+extends the lexer of Jasmin that comes with Pygments by the
+[types in Java notation](#types-in-java-notation): the name of a type is
+coloured as a type, and the brackets `[]` of an array type and the commas
+between parameters as punctuation. Sources written with descriptors are
+coloured as by the lexer of Jasmin. The lexer needs Pygments, e.g.
+`pip install pytunia[pygments]`:
+
+```
+pygmentize -l pytunia Hello.j
+```
+
+In Jupyter, `IPython.display.Code(filename='Hello.j', language='pytunia')`
+displays an assembler file with syntax highlighting.
+
 ## Compatibility with Jasmin
 
 ### Why the output is identical
@@ -310,6 +327,7 @@ method names are converted to snake_case.
 | `pytunia/insninfo.py` | `jasmin.InsnInfo`: instruction table |
 | `pytunia/jas/` | the `jas` package that writes class files (constant pool, instructions, Code attribute, annotations, StackMap frames, ...) |
 | `pytunia/javacompat.py` | emulation of the Java library behaviour that the output depends on |
+| `pytunia/pygments_lexer.py` | the lexer for Pygments (see [Syntax highlighting](#syntax-highlighting)); new in pytunia |
 
 ### How a source file is assembled
 
@@ -367,6 +385,9 @@ class files, standard output, standard error and exit status.
   [Types in Java notation](#types-in-java-notation): a class written in
   Java notation must give the same class file as the same class written with
   descriptors.
+* `tests/test_pygments_lexer.py` checks the lexer for Pygments: every case
+  must be coloured as by the lexer of Jasmin, and the types in Java notation
+  must be coloured as types. It is skipped if Pygments is not installed.
 * `tests/test_cli.py` runs the command line (`python3 -m pytunia`) on every
   case and compares the class files, standard output and exit status with
   those of the Java version, and standard error for the cases without

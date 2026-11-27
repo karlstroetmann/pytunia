@@ -36,6 +36,13 @@ Source = "https://github.com/karlstroetmann/pytunia"
 Issues = "https://github.com/karlstroetmann/pytunia/issues"
 "Original Jasmin" = "https://jasmin.sourceforge.net/"
 
+[project.optional-dependencies]
+pygments = ["pygments"]
+
+# the lexer for highlighting assembler code, e.g. with pygmentize -l pytunia or IPython.display.Code
+[project.entry-points."pygments.lexers"]
+pytunia = "pytunia.pygments_lexer:PytuniaLexer"
+
 [tool.setuptools]
 packages = ["pytunia", "pytunia.jas"]
 

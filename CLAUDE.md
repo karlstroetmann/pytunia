@@ -49,6 +49,8 @@ pytunia/
   classfile.py     ClassFile: builds the class (port of jasmin.ClassFile), reports errors
   insninfo.py      instruction table (jasmin.InsnInfo)
   javacompat.py    Java behaviour the output depends on (Hashtable order, Float.toString, ...)
+  pygments_lexer.py  Pygments plugin 'pytunia': Pygments' JasminLexer plus the types in
+                   Java notation (only imported by Pygments; Pygments is optional)
   jas/             port of Jasmin's jas package: constant pool, instructions, attributes
 tests/
   cases/*.j        ~90 test sources; a line "; ARGS: -g" gives command line options
@@ -57,6 +59,7 @@ tests/
   test_api.py, test_cli.py, make_expected.py
   test_dots.py     the extension "Dots in class names" (no jasmin.jar results)
   test_java_types.py  the extension "Types in Java notation" (no jasmin.jar results)
+  test_pygments_lexer.py  the lexer; every case must lex as with JasminLexer
 tools/fuzz_compare.py   differential fuzzing against jasmin.jar
 ```
 
@@ -120,5 +123,9 @@ not in the repository.
   sequences, numbers keep their Java type (JavaInteger, JavaLong, ...).
 - `ClassFile` keeps no global state, so assemblies can run in parallel
   threads.
+- The lecture notes "Formal Languages and Their Applications" contain a copy
+  of the class `PytuniaLexer` (`Lecture-Notes/pytunia_lexer.py`), which minted
+  loads, since the Pygments of TeX Live cannot load plugins. Keep both copies
+  of the class identical.
 - iCloud Drive may create conflict copies ("name 2.py"). They are
   git-ignored; don't commit them.
