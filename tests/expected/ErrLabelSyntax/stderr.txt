@@ -1,0 +1,5 @@
+ErrLabelSyntax.j:8: Warning - Syntax error.
+
+^
+ErrLabelSyntax.j:10: Error - Couldn't repair and continue parse.
+ErrLabelSyntax.j: Found 2 errors

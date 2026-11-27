@@ -1,0 +1,2 @@
+ErrNoNewlineAtEnd.j:5: JAS Error: bipush value exceed size of byte.
+ErrNoNewlineAtEnd.j: Found 1 errors

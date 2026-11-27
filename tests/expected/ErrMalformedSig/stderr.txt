@@ -1,0 +1,4 @@
+ErrMalformedSig.j:7: ErrMalformedSig.j: exception - <java.lang.IllegalArgumentException> malformed signature : foo..
+  r
+   ^
+ErrMalformedSig.j: Found 1 errors

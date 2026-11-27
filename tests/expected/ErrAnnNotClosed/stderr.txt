@@ -1,0 +1,7 @@
+ErrAnnNotClosed.j:5: Warning - Syntax error.
+.method 
+        ^
+ErrAnnNotClosed.j:5: Error - Couldn't repair and continue parse.
+.method 
+        ^
+ErrAnnNotClosed.j: Found 2 errors

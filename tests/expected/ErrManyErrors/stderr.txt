@@ -1,0 +1,4 @@
+ErrManyErrors.j:5: Warning - Syntax error.
+
+^
+ErrManyErrors.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrBytecodeDouble.j:2: invalid bytecode version number : 50.0.
+.class 
+       ^
+ErrBytecodeDouble.j: Found 1 errors

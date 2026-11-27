@@ -1,0 +1,4 @@
+ErrNewarrayInt.j:7: JAS Error: Bad arguments for instruction newarray.
+  r
+   ^
+ErrNewarrayInt.j: Found 1 errors

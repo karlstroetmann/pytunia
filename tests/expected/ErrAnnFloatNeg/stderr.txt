@@ -1,0 +1,4 @@
+ErrAnnFloatNeg.j:5: JAS Error: incompatible value for annotation field type.
+.
+ ^
+ErrAnnFloatNeg.j: Found 1 errors

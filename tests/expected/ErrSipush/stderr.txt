@@ -1,0 +1,4 @@
+ErrSipush.j:7: JAS Error: opc_sipush numeric value exceed size for short.
+  r
+   ^
+ErrSipush.j: Found 1 errors

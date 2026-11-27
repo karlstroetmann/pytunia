@@ -1,0 +1,4 @@
+ErrLimitWord.j:5: .limit expected "stack" or "locals", but got foo.
+  r
+   ^
+ErrLimitWord.j: Found 1 errors

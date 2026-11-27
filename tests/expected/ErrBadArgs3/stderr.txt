@@ -1,0 +1,4 @@
+ErrBadArgs3.j:7: JAS Error: Bad arguments for instruction iload.
+  r
+   ^
+ErrBadArgs3.j: Found 1 errors

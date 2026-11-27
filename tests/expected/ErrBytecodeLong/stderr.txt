@@ -1,0 +1,7 @@
+ErrBytecodeLong.j:2: invalid bytecode version number : 3000000000.
+.class 
+       ^
+ErrBytecodeLong.j:2: ErrBytecodeLong.j: exception - <java.lang.StringIndexOutOfBoundsException> String index out of range: -1..
+.class 
+       ^
+ErrBytecodeLong.j: Found 2 errors

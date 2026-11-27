@@ -1,0 +1,7 @@
+ErrFieldValue.j:4: Warning - Syntax error.
+
+^
+ErrFieldValue.j:4: Error - Couldn't repair and continue parse.
+
+^
+ErrFieldValue.j: Found 2 errors

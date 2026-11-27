@@ -1,0 +1,4 @@
+ErrMetho.j:3: JAS Error: Unknown directive or badly formed number..
+.metho 
+       ^
+ErrMetho.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrBadNumber4.j:7: JAS Error: Badly formatted number.
+
+^
+ErrBadNumber4.j: Found 1 errors

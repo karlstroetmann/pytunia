@@ -1,0 +1,8 @@
+ErrVar.j:7: Warning - Syntax error.
+  r
+   ^
+ErrVar.j:9: Warning - Syntax error.
+
+^
+ErrVar.j:9: Error - Couldn't repair and continue parse.
+ErrVar.j: Found 3 errors

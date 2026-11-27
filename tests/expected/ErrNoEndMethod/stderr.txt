@@ -1,0 +1,3 @@
+ErrNoEndMethod.j:5: Warning - Syntax error.
+ErrNoEndMethod.j:5: Error - Couldn't repair and continue parse.
+ErrNoEndMethod.j: Found 2 errors

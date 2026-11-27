@@ -1,0 +1,4 @@
+ErrAnnSig.j:4: JAS Error: invalid type signature for annotation field.
+  x Q = 
+        ^
+ErrAnnSig.j: Found 1 errors

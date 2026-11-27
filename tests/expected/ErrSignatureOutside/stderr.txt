@@ -1,0 +1,3 @@
+ErrSignatureOutside.j:5: Warning - Syntax error.
+ErrSignatureOutside.j:5: Error - Couldn't repair and continue parse.
+ErrSignatureOutside.j: Found 2 errors

@@ -1,0 +1,2 @@
+ErrFarJump.j:33010: JAS Error: reference from line 6 exceed size for short.
+ErrFarJump.j: Found 1 errors

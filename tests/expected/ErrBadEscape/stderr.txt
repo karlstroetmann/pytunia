@@ -1,0 +1,4 @@
+ErrBadEscape.j:6: JAS Error: Bad backslash escape sequence.
+  ldc "a\q
+          ^
+ErrBadEscape.j: Found 1 errors

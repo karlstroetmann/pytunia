@@ -1,0 +1,4 @@
+ErrTabs.j:4: JAS Error: bipush value exceed size of byte.
+
+^
+ErrTabs.j: Found 1 errors

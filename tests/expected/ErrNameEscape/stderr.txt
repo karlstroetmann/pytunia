@@ -1,0 +1,4 @@
+ErrNameEscape.j:6: JAS Error: Only '\u' escape sequence allowed in names.
+  getstatic a\x
+               ^
+ErrNameEscape.j: Found 1 errors

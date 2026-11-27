@@ -1,0 +1,4 @@
+ErrAnnTooMany.j:5: JAS Error: too many values for nonarray annotation field type.
+.
+ ^
+ErrAnnTooMany.j: Found 1 errors

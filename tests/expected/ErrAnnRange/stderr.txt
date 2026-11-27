@@ -1,0 +1,4 @@
+ErrAnnRange.j:4: JAS Error: annotation field value exceed range of type.
+
+^
+ErrAnnRange.j: Found 1 errors

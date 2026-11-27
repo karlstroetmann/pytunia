@@ -1,0 +1,4 @@
+ErrBipush.j:6: JAS Error: bipush value exceed size of byte.
+
+^
+ErrBipush.j: Found 1 errors

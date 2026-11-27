@@ -1,0 +1,32 @@
+"""
+pytunia - Jasmin, the assembler for the Java Virtual Machine, in Python.
+
+This package is a port of Jasmin 2.4 (Jonathan Meyer, Daniel Reynaud,
+Iouri Kharon) from Java to Python.  It reads Jasmin assembly code and
+produces Java class files that are byte-for-byte identical to those
+produced by the Java version.
+
+    import pytunia
+
+    # assemble a file and write the class file (returns its path)
+    path = pytunia.assemble("Hello.j", output_dir="classes")
+
+    # assemble source text in memory
+    class_name, data = pytunia.assemble_string(source)
+
+Errors raise pytunia.AssemblyError; its attribute ``errors`` is a list of
+Diagnostic objects, and str(error) is the error output of Jasmin.
+
+For debugging, the original command line interface is available as
+``python3 -m pytunia [-d <outpath>] [-g] [-e <encoding>] <file> ...``.
+"""
+
+from .api import assemble, assemble_string
+from .classfile import ClassFile
+from .diagnostics import AssemblyError, Diagnostic
+from .main import VERSION
+
+__version__ = "2.4"
+
+__all__ = ["assemble", "assemble_string", "AssemblyError", "Diagnostic",
+           "ClassFile", "VERSION"]

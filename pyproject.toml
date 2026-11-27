@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytunia"
+version = "2.4"
+description = "Jasmin, an assembler for the Java Virtual Machine, ported to Python"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE.txt"}
+
+[tool.setuptools]
+packages = ["pytunia", "pytunia.jas"]

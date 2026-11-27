@@ -1,0 +1,4 @@
+ErrStackOffset2.j:6: Warning - Syntax error.
+    offset 
+           ^
+ErrStackOffset2.j: Found 1 errors

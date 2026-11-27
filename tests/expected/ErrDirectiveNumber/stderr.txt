@@ -1,0 +1,4 @@
+ErrDirectiveNumber.j:4: JAS Error: Unknown directive or badly formed number..
+
+^
+ErrDirectiveNumber.j: Found 1 errors

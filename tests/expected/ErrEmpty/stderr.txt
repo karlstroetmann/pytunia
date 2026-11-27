@@ -1,0 +1,2 @@
+ErrEmpty.j: JAS Error: empty source file.
+ErrEmpty.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrBadUEscape.j:6: JAS Error: Bad '\u' escape sequence.
+  ldc "\u12G
+            ^
+ErrBadUEscape.j: Found 1 errors

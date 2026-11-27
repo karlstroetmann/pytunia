@@ -1,0 +1,7 @@
+ErrDoubleClass.j:3: Warning - Syntax error.
+.class 
+       ^
+ErrDoubleClass.j:3: Error - Couldn't repair and continue parse.
+.class 
+       ^
+ErrDoubleClass.j: Found 2 errors

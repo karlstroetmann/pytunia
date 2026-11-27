@@ -1,0 +1,4 @@
+ErrInterfaceNargs.j:7: JAS Error: (gloups)Bad arguments for instruction invokeinterface.
+  r
+   ^
+ErrInterfaceNargs.j: Found 1 errors

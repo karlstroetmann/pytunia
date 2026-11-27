@@ -1,0 +1,4 @@
+ErrUnknownDirective.j:3: JAS Error: Unknown directive or badly formed number..
+.foo 
+     ^
+ErrUnknownDirective.j: Found 1 errors

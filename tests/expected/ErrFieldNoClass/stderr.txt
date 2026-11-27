@@ -1,0 +1,4 @@
+ErrFieldNoClass.j:7: ErrFieldNoClass.j: exception - <java.lang.NullPointerException> null..
+  r
+   ^
+ErrFieldNoClass.j: Found 1 errors

@@ -1,0 +1,7 @@
+ErrSet.j:8: Warning - Syntax error.
+
+^
+ErrSet.j:9: JAS Error: Bad arguments for instruction iinc.
+  r
+   ^
+ErrSet.j: Found 2 errors

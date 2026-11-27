@@ -1,0 +1,4 @@
+ErrDollar.j:7: ErrDollar.j: exception - <java.lang.StringIndexOutOfBoundsException> String index out of range: 0..
+
+^
+ErrDollar.j: Found 1 errors

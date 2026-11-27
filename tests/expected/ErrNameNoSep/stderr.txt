@@ -1,0 +1,4 @@
+ErrNameNoSep.j:6: JAS Error: Not separator after ''-enclosed name.
+  getstatic 'a'b
+                ^
+ErrNameNoSep.j: Found 1 errors

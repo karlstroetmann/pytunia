@@ -1,0 +1,4 @@
+# The test inputs and the expected outputs must stay byte-exact:
+# no line end conversion
+tests/cases/** -text
+tests/expected/** -text

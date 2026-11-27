@@ -1,0 +1,7 @@
+ErrBytecodeInt.j:2: Warning - Syntax error.
+
+^
+ErrBytecodeInt.j:2: Error - Couldn't repair and continue parse.
+
+^
+ErrBytecodeInt.j: Found 2 errors

@@ -1,0 +1,10 @@
+ErrStackType.j:6: jas.jasError: Unknown item verification type : Foo.
+    l
+     ^
+ErrStackType.j:7: jas.jasError: Object requires a class name.
+    o
+     ^
+ErrStackType.j:7: Warning - Syntax error.
+    offset 
+           ^
+ErrStackType.j: Found 3 errors

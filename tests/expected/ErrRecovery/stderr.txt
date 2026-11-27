@@ -1,0 +1,4 @@
+ErrRecovery.j:7: JAS Error: Missing arguments for instruction iload.
+  b
+   ^
+ErrRecovery.j: Found 1 errors

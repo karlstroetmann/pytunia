@@ -1,0 +1,2 @@
+ErrAttrFile.j:4: JAS Error: Generic atribute file does-not-exist.bin not found.
+ErrAttrFile.j: Found 1 errors

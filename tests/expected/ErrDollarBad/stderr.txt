@@ -1,0 +1,4 @@
+ErrDollarBad.j:7: JAS Error: Badly relative offset number.
+
+^
+ErrDollarBad.j: Found 1 errors

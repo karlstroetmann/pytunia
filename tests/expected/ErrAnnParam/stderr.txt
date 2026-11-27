@@ -1,0 +1,4 @@
+ErrAnnParam.j:4: JAS Error: annotation parameter number can be in range 1-256.
+  .annotation visibleparam 0 
+                             ^
+ErrAnnParam.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrGloups.j:7: JAS Error: (gloups)Bad arguments for instruction iload.
+  r
+   ^
+ErrGloups.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrBadArgs4.j:7: JAS Error: Bad arguments for instruction aload.
+  r
+   ^
+ErrBadArgs4.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrBadArgs2.j:7: JAS Error: Bad arguments for instruction ldc2_w.
+  r
+   ^
+ErrBadArgs2.j: Found 1 errors

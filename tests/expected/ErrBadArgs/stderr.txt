@@ -1,0 +1,5 @@
+ErrBadArgs.j:7: Warning - Syntax error.
+
+^
+ErrBadArgs.j:9: Error - Couldn't repair and continue parse.
+ErrBadArgs.j: Found 2 errors

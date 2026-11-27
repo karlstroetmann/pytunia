@@ -1,0 +1,4 @@
+ErrCatchMixed.j:6: Warning - Syntax error.
+  .catch all from L1 to 5 
+                          ^
+ErrCatchMixed.j: Found 1 errors

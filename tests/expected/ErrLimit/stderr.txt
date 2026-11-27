@@ -1,0 +1,4 @@
+ErrLimit.j:4: JAS Error: Illegal limit value.
+
+^
+ErrLimit.j: Found 1 errors

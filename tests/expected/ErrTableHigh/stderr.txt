@@ -1,0 +1,4 @@
+ErrTableHigh.j:10: tableswitch - given incorrect value for <high>.
+L
+ ^
+ErrTableHigh.j: Found 1 errors

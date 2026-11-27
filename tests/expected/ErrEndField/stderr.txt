@@ -1,0 +1,7 @@
+ErrEndField.j:3: Warning - Syntax error.
+.end 
+     ^
+ErrEndField.j:3: Error - Couldn't repair and continue parse.
+.end 
+     ^
+ErrEndField.j: Found 2 errors

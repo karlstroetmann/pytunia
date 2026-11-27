@@ -1,0 +1,4 @@
+ErrBytecodeExp.j:2: ErrBytecodeExp.j: exception - <java.lang.NumberFormatException> For input string: "0E10"..
+.class 
+       ^
+ErrBytecodeExp.j: Found 1 errors

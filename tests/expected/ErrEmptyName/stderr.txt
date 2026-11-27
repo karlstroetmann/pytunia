@@ -1,0 +1,4 @@
+ErrEmptyName.j:6: JAS Error: Empty ''-enclosed name.
+  getstatic ''
+              ^
+ErrEmptyName.j: Found 1 errors

@@ -1,0 +1,4 @@
+ErrArrayType.j:7: JAS Error: Bad array type: newarray.
+  r
+   ^
+ErrArrayType.j: Found 1 errors

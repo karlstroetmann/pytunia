@@ -1,0 +1,4 @@
+ErrStackUse0.j:4: JAS Error: Invalid counter.
+  .stack use 0 
+               ^
+ErrStackUse0.j: Found 1 errors

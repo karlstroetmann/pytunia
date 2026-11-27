@@ -1,0 +1,2 @@
+ErrOnlyComments.j: JAS Error: empty source file.
+ErrOnlyComments.j: Found 1 errors

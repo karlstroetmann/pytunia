@@ -1,0 +1,4 @@
+ErrMissingArgs.j:7: JAS Error: Missing arguments for instruction bipush.
+  r
+   ^
+ErrMissingArgs.j: Found 1 errors
