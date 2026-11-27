@@ -4,9 +4,9 @@ Tests of the library interface: pytunia.assemble and
 pytunia.assemble_string.
 
 Every test case in cases/ is assembled with both functions.  The class
-files must be identical to those of the Java version (expected/), and
-for sources with errors str(AssemblyError) must be identical to the error
-output of the Java version.
+files must be identical to those of the Java version (expected/).  For
+sources with errors, AssemblyError must be raised, and its first error
+must refer to the line given in expected_errors.py.
 """
 
 import concurrent.futures
@@ -25,6 +25,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
 
 from make_expected import CASES, EXPECTED, case_args, case_names  # noqa
+from expected_errors import check_error_report  # noqa
 from test_cli import read_expected  # noqa
 
 import pytunia  # noqa
@@ -72,7 +73,7 @@ class AssembleStringTests(InCasesDirectory):
 
 def _make_assemble_test(name):
     def test(self):
-        _, e_stderr, _, e_classes = read_expected(name)
+        _, _, _, e_classes = read_expected(name)
         line_numbers, encoding = options(name)
         out = tempfile.mkdtemp()
         try:
@@ -89,7 +90,7 @@ def _make_assemble_test(name):
                     pytunia.assemble(name + '.j', out,
                                      line_numbers=line_numbers,
                                      encoding=encoding)
-                self.assertEqual(str(cm.exception) + '\n', e_stderr)
+                check_error_report(self, name, str(cm.exception) + '\n')
                 self.assertEqual(os.listdir(out), [])
         finally:
             shutil.rmtree(out)
@@ -98,7 +99,7 @@ def _make_assemble_test(name):
 
 def _make_assemble_string_test(name):
     def test(self):
-        _, e_stderr, _, e_classes = read_expected(name)
+        _, _, _, e_classes = read_expected(name)
         line_numbers, _ = options(name)
         source = read_source(name)
         if e_classes:
@@ -111,7 +112,7 @@ def _make_assemble_string_test(name):
             with self.assertRaises(pytunia.AssemblyError) as cm:
                 pytunia.assemble_string(source, name + '.j',
                                         line_numbers=line_numbers)
-            self.assertEqual(str(cm.exception) + '\n', e_stderr)
+            check_error_report(self, name, str(cm.exception) + '\n')
     return test
 
 
@@ -192,16 +193,66 @@ class InterfaceTests(InCasesDirectory):
         self.assertEqual((d.filename, d.line, d.message),
                          ('X.j', 4, 'JAS Error: bipush value exceed size '
                                     'of byte'))
-        # Jasmin shows the line up to the position after the number
-        self.assertEqual(d.source_line, '  bipush 300 ')
-        self.assertEqual(d.column, 13)
-        # (this is exactly what jasmin.jar prints)
+        # errors found while the class is built refer to a statement
+        self.assertEqual(d.source_line, '  bipush 300 ; too big')
+        self.assertEqual(d.column, None)
         self.assertEqual(str(e), 'X.j:4: JAS Error: bipush value exceed '
-                                 'size of byte.\n  bipush 300 \n'
-                                 '             ^\nX.j: Found 1 errors')
+                                 'size of byte.\n  bipush 300 ; too big\n'
+                                 'X.j: Found 1 errors')
         # the exception can be pickled (e.g. for multiprocessing)
         e2 = pickle.loads(pickle.dumps(e))
         self.assertEqual(str(e2), str(e))
+
+    def test_syntax_error(self):
+        # syntax errors refer to the token where they are detected
+        source = ('.class public X\n.super java/lang/Object\n'
+                  '.method public static m()V\n'
+                  '\tiinc 1 foo\n  return\n.end method\n')
+        with self.assertRaises(pytunia.AssemblyError) as cm:
+            pytunia.assemble_string(source, 'X.j')
+        d, = cm.exception.errors
+        self.assertEqual((d.line, d.column, d.source_line),
+                         (4, 8, '\tiinc 1 foo'))
+        self.assertEqual(str(d), "X.j:4: Syntax error: unexpected name "
+                                 "'foo', expected end of line or integer."
+                                 "\n\tiinc 1 foo\n\t       ^")
+
+    def test_lexical_error(self):
+        # errors of the scanner refer to the character where they are
+        # detected, unterminated strings to their start
+        for source, line, column in [
+                ('.class public X\n.super java/lang/Object\n'
+                 '.field static s Ljava/lang/String; = "a\\qb"\n', 3, 40),
+                ('.class public X\n.super java/lang/Object\n'
+                 '.field static s Ljava/lang/String; = "ab\n', 3, 37)]:
+            with self.assertRaises(pytunia.AssemblyError) as cm:
+                pytunia.assemble_string(source, 'X.j')
+            d, = cm.exception.errors
+            self.assertEqual((d.line, d.column), (line, column))
+
+    def test_line_of_statement(self):
+        # errors that are found while the class is built refer to the
+        # first line of the statement, even if a string spans lines
+        source = ('.class public X\n.super java/lang/Object\n'
+                  '.method public static m()V\n'
+                  '  .limit stack 2\n'
+                  '  ldc2_w "multi\nline"\n'
+                  '  return\n.end method\n')
+        with self.assertRaises(pytunia.AssemblyError) as cm:
+            pytunia.assemble_string(source, 'X.j')
+        self.assertEqual(cm.exception.errors[0].line, 5)
+
+    def test_variable_substitution(self):
+        # $name is rejected after .set name (in Jasmin 2.4, it becomes
+        # .method); without .set, it is an ordinary name
+        source = ('.class public X\n.super java/lang/Object\n'
+                  '.method public static m()V\n'
+                  '  .limit stack 1\n  .set x 5\n  ldc %s\n  pop\n'
+                  '  return\n.end method\n')
+        with self.assertRaises(pytunia.AssemblyError) as cm:
+            pytunia.assemble_string(source % '$x', 'X.j')
+        self.assertIn('$x', cm.exception.errors[0].message)
+        pytunia.assemble_string(source % '$y', 'X.j')
 
     def test_silent(self):
         # the library functions print nothing

@@ -39,7 +39,7 @@ def _assemble(text, filename, display_name, line_numbers,
                 cf.source_name = simple_name + ".j"
             return cf, cf.to_bytes()
     except JasError as e:
-        cf.report_error("JAS Error: " + e.get_message(), e.num_tag)
+        cf.report_error("JAS Error: " + e.get_message())
     except JavaException as e:
         cf.report_error("%s: exception - <%s> %s."
                         % (display_name, e.java_class, e.get_message()))

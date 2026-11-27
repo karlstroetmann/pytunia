@@ -141,7 +141,7 @@ class VerifyFrame(object):
 
     def get_frame(self, count):
         if count > len(self.locals):
-            raise JasError("Counter exceed range", True)
+            raise JasError("Counter exceed range")
         result = list(self.locals)
         if count != 0:              # else -- full copy
             del result[count:]

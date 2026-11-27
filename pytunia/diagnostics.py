@@ -15,12 +15,16 @@ class Diagnostic(object):
     ``message``
         the message, e.g. ``"JAS Error: bipush value exceed size of byte"``
     ``source_line``
-        the part of the source line that had been read when the error was
-        detected (``None`` if not available)
+        the source line that the error refers to (``None`` if not
+        available)
     ``column``
-        the position in ``source_line`` where the error was detected
+        the position in ``source_line`` where the error was detected,
+        counted from 0 (``None`` if the error refers to the whole line,
+        e.g. to a statement)
 
-    ``str(diagnostic)`` formats the message exactly as Jasmin prints it.
+    ``str(diagnostic)`` is the complete message: the file name, the line
+    number and the message, then the source line and a caret below the
+    column.
     """
 
     __slots__ = ('filename', 'line', 'message', 'source_line', 'column',
@@ -46,7 +50,8 @@ class AssemblyError(Exception):
     """Raised when a Jasmin source contains errors.
 
     ``errors`` is the list of Diagnostic objects.  ``str(error)`` is the
-    error output of Jasmin, including the final "Found N errors" line.
+    error output of the command line, including the final "Found N errors"
+    line.
     """
 
     def __init__(self, filename, errors):

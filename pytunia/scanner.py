@@ -1,117 +1,22 @@
 """
-The tokenizer for Jasmin source files (port of jasmin.Scanner,
-jasmin.ScannerUtils and jasmin.ReservedWords).
+The tokenizer for Jasmin source files (port of jasmin.Scanner and
+jasmin.ScannerUtils).
 
 The scanner works on a Java string, i.e. a sequence of UTF-16 code
-units (see javacompat.to_java_string).
+units (see javacompat.to_java_string).  It returns the tokens as
+larkita.Token objects; their types are the terminals of the grammar
+jasmin.g.  The reserved words of Jasmin are the string literals of the
+grammar (parser.KEYWORDS).
 """
 
-from . import sym
+from larkita import Token
+
 from . import insninfo
 from .jas.errors import JasError
 from .javacompat import (JavaException, JavaInteger, JavaLong, JavaFloat,
                          JavaDouble, parse_int, parse_long, parse_double,
                          java_digit, substring, char_at, to_float32)
-
-
-# ---------------------------------------------------------------------------
-# tokens
-# ---------------------------------------------------------------------------
-
-class Token(object):
-    """A symbol of the parser.  ``sym`` is the symbol number,
-    ``parse_state`` is the parser state when the symbol is on the parse
-    stack and ``value`` is the semantic value (str_val, int_val, num_val
-    or var_val in the Java version)."""
-
-    __slots__ = ('sym', 'parse_state', 'value')
-
-    def __init__(self, sym_num, value=None, parse_state=-1):
-        self.sym = sym_num
-        self.value = value
-        self.parse_state = parse_state
-
-    def __repr__(self):
-        return 'Token(%s, %r)' % (sym.NAMES.get(self.sym, self.sym),
-                                  self.value)
-
-
-# ---------------------------------------------------------------------------
-# reserved words
-# ---------------------------------------------------------------------------
-
-# the reserved words and their symbol numbers
-RESERVED_WORDS = dict([
-    # Jasmin directives
-    (".annotation", sym.DANNOTATION),
-    (".attribute", sym.DATTRIBUTE),
-    (".bytecode", sym.DBYTECODE),
-    (".catch", sym.DCATCH),
-    (".class", sym.DCLASS),
-    (".deprecated", sym.DDEPRECATED),
-    (".end", sym.DEND),
-    (".field", sym.DFIELD),
-    (".implements", sym.DIMPLEMENTS),
-    (".inner", sym.DINNER),
-    (".interface", sym.DINTERFACE),
-    (".limit", sym.DLIMIT),
-    (".line", sym.DLINE),
-    (".method", sym.DMETHOD),
-    (".set", sym.DSET),
-    (".source", sym.DSOURCE),
-    (".super", sym.DSUPER),
-    (".throws", sym.DTHROWS),
-    (".var", sym.DVAR),
-    (".debug", sym.DDEBUG),
-    (".enclosing", sym.DENCLOSING),
-    (".signature", sym.DSIGNATURE),
-    (".stack", sym.DSTACK),
-
-    # reserved words used in Jasmin directives
-    ("field", sym.FIELD),
-    ("from", sym.FROM),
-    ("method", sym.METHOD),
-    ("to", sym.TO),
-    ("is", sym.IS),
-    ("using", sym.USING),
-    ("signature", sym.SIGNATURE),
-    ("stack", sym.STACK),
-    ("offset", sym.OFFSET),
-    ("locals", sym.LOCALS),
-    ("use", sym.USE),
-    ("inner", sym.INNER),
-    ("outer", sym.OUTER),
-    ("class", sym.CLASS),
-    ("visible", sym.VISIBLE),
-    ("invisible", sym.INVISIBLE),
-    ("visibleparam", sym.VISIBLEPARAM),
-    ("invisibleparam", sym.INVISIBLEPARAM),
-
-    # Special-case instructions
-    ("tableswitch", sym.TABLESWITCH),
-    ("lookupswitch", sym.LOOKUPSWITCH),
-    ("default", sym.DEFAULT),
-
-    # Access flags
-    ("public", sym.PUBLIC),
-    ("private", sym.PRIVATE),
-    ("protected", sym.PROTECTED),
-    ("static", sym.STATIC),
-    ("final", sym.FINAL),
-    ("synchronized", sym.SYNCHRONIZED),
-    ("volatile", sym.VOLATILE),
-    ("transient", sym.TRANSIENT),
-    ("native", sym.NATIVE),
-    ("interface", sym.INTERFACE),
-    ("abstract", sym.ABSTRACT),
-
-    ("annotation", sym.ANNOTATION),
-    ("enum", sym.ENUM),
-    ("bridge", sym.BRIDGE),
-    ("varargs", sym.VARARGS),
-    ("fpstrict", sym.STRICT),
-    ("synthetic", sym.SYNTHETIC),
-])
+from .parser import KEYWORDS
 
 
 # ---------------------------------------------------------------------------
@@ -219,45 +124,45 @@ _ESCAPES = {ord('n'): '\n', ord('r'): '\r', ord('t'): '\t', ord('f'): '\f',
             ord('b'): '\b', ord('"'): '"', ord("'"): "'", ord('\\'): '\\'}
 
 
-def whitespace(c):
-    return c in _WHITESPACE
-
-
-def separator(c):
-    return c in _SEPARATORS
-
-
 class Scanner(object):
     def __init__(self, text):
         """``text`` is the contents of the source file as a Java string."""
         self._inp = text
         self._pos = 0
         self._len = len(text)
-        # used for error reporting to print out where an error is
+        # the position of next_char (used for tokens and error messages):
+        # its line and the number of characters of the line read so far
+        # (-1 at the end of the input).  When next_char is a line break,
+        # line_num is already the number of the next line.
         self.line_num = 1
-        self.token_line_num = 0
         self.char_num = 0
-        self.int_char_num = 0
-        self.int_line_num = 0
-        self._line = []
-        self.int_line = None
-        # used by the .set directive to define new variables
-        self.dict = {}
-        # As in the Java version, the same token object is returned every
-        # time a reserved word is read (the parser stores its state in it).
-        # The Java version shares them between all scanners; here every
-        # scanner has its own, so that scanners can be used concurrently.
-        self._reserved = dict((name, Token(num))
-                              for name, num in RESERVED_WORDS.items())
+        self._prev_line_length = 0
+        # the line of the first token of the current statement
+        self._statement_line = None
+        # where an error is reported instead of the current position
+        self._error_at = None
+        # the variables defined with .set (see _read_word)
+        self._variables = set()
+        self._after_set = False
         self.next_char = 0      # no start comment
         self._skip_empty_lines()
         if self.next_char == -1:
             raise JasError("empty source file")
 
-    @property
-    def line(self):
-        """the part of the current line that has been read so far"""
-        return ''.join(self._line)
+    def position(self):
+        """The line and column (both counted from 1) of the character that
+        the scanner is looking at; the column is None at the end of the
+        input."""
+        if self.next_char == 10:
+            return self.line_num - 1, self._prev_line_length + 1
+        if self.char_num < 0:
+            return self.line_num, None
+        return self.line_num, self.char_num
+
+    def error_position(self):
+        """The position where an error of the scanner is reported: the start
+        of an unterminated string, otherwise the current position."""
+        return self._error_at or self.position()
 
     def _advance(self):
         """Advances the input by one character."""
@@ -270,15 +175,13 @@ class Scanner(object):
         if c == -1:             # EOF
             if self.char_num == 0:
                 self.char_num = -1
-                del self._line[:]
                 return
             self.next_char = c = 10
         if c == 10:             # a new line
+            self._prev_line_length = self.char_num
             self.line_num += 1
             self.char_num = 0
-            del self._line[:]
             return
-        self._line.append(chr(c))
         self.char_num += 1
 
     def _skip_empty_lines(self):
@@ -317,46 +220,58 @@ class Scanner(object):
             raise JasError("Left over '\\u' escape sequence")
         return chval
 
-    def next_token(self):
-        """Recognizes and returns the next complete token."""
-        self.token_line_num = self.line_num
+    def tokens(self):
+        """Returns an iterator over all tokens of the input."""
+        while True:
+            token = self.next_token()
+            if token is None:
+                return
+            yield token
 
+    def next_token(self):
+        """Recognizes and returns the next token, or None at the end of the
+        input."""
         while True:
             c = self.next_char
 
             if c == 59 or c == 10:              # a comment or a new line
-                # return single SEP token (skip multiple newlines
+                # return a single EOL token (skip multiple newlines
                 # interspersed with whitespace or comments)
+                line, column = self.position()
+                statement_line = self._statement_line or line
+                self._statement_line = None
                 self._skip_empty_lines()
-                self.token_line_num = self.line_num
-                return Token(sym.SEP)
+                return Token('EOL', statement_line, line=line, column=column)
 
-            if c == -1:                         # EOF token
-                self.char_num = -1
-                return Token(sym.EOF)
-
-            if c in _NUMBER_START:              # a number
-                return self._read_number()
-
-            if c == 34:                         # '"': quoted string
-                return self._read_string()
-
-            if c == 39:                         # "'": quoted name
-                return self._read_quoted_name()
+            if c == -1:                         # end of the input
+                return None
 
             if c == 32 or c == 9 or c == 13:    # whitespace
                 self._advance()
                 continue
+            break
 
-            if c == 61:                         # '='
-                self._advance()
-                return Token(sym.EQ)
+        line, column = self.position()
+        if self._statement_line is None:
+            self._statement_line = line
 
-            if c == 58:                         # ':'
-                self._advance()
-                return Token(sym.COLON)
+        if c in _NUMBER_START:                  # a number
+            token_type, value = self._read_number()
+        elif c == 34:                           # '"': quoted string
+            token_type, value = 'STR', self._read_string((line, column))
+        elif c == 39:                           # "'": quoted name
+            token_type, value = 'WORD', self._read_quoted_name()
+        elif c == 61 or c == 58:                # '=' or ':'
+            self._advance()
+            value = chr(c)
+            token_type = KEYWORDS[value]
+        else:
+            token_type, value = self._read_word()
 
-            return self._read_word()
+        if self._after_set and token_type == 'WORD':
+            self._variables.add(value)
+        self._after_set = token_type == KEYWORDS['.set']
+        return Token(token_type, value, line=line, column=column)
 
     def _read_number(self):
         chars = []
@@ -368,9 +283,8 @@ class Scanner(object):
         s = ''.join(chars)
 
         # This catches directives like ".method"
-        tok = self._reserved.get(s)
-        if tok is not None:
-            return tok
+        if s in KEYWORDS:
+            return KEYWORDS[s], s
 
         try:
             num = convert_number(s)
@@ -382,13 +296,11 @@ class Scanner(object):
             raise JasError("Unknown directive or badly formed number.")
 
         if isinstance(num, JavaInteger):
-            self.int_line = self.line
-            self.int_line_num = self.token_line_num
-            self.int_char_num = self.char_num
-            return Token(sym.Int, int(num))
-        return Token(sym.Num, num)
+            return 'INT', int(num)
+        return 'NUM', num
 
-    def _read_string(self):
+    def _read_string(self, start):
+        """Reads a string that starts at the position ``start``."""
         chars = []
         already = False
         while True:
@@ -400,9 +312,10 @@ class Scanner(object):
             c = self.next_char
             if c == 34:                         # closing '"'
                 self._advance()
-                return Token(sym.Str, ''.join(chars))
+                return ''.join(chars)
 
             if c == -1:
+                self._error_at = start
                 raise JasError("Unterminated string")
 
             chval = chr(c)
@@ -456,7 +369,7 @@ class Scanner(object):
                 self._advance()             # skip close quote
                 if self.next_char not in _SEPARATORS:
                     raise JasError("Not separator after ''-enclosed name")
-                return Token(sym.Word, ''.join(chars))
+                return ''.join(chars)
             chval = chr(c)
             if c == 92:
                 chval = self._name_escape()
@@ -479,13 +392,12 @@ class Scanner(object):
 
         if not only_name:
             # Jasmin keyword or directive ?
-            tok = self._reserved.get(s)
-            if tok is not None:
-                return tok
+            if s in KEYWORDS:
+                return KEYWORDS[s], s
 
             # is it a JVM instruction ?
             if insninfo.contains(s):
-                return Token(sym.Insn, s)
+                return 'INSN', s
 
             if s[0] == '$':
                 rest = s[1:]
@@ -503,11 +415,13 @@ class Scanner(object):
                         raise JasError("Badly relative offset number")
                     if neg:
                         n = int(JavaInteger(-n))
-                    return Token(sym.Relative, n)
-                # Perform variable substitution
-                v = self.dict.get(rest)
-                if v is not None:
-                    return v
+                    return 'RELATIVE', n
+                # Jasmin 2.4 substitutes the variables defined with
+                # ".set name value" by a token that the parser takes as
+                # ".method", so a program that uses one is not accepted.
+                if rest in self._variables:
+                    raise JasError("Variable substitution is not supported: "
+                                   + s)
 
         # Unrecognized string token (e.g. a classname)
-        return Token(sym.Word, s)
+        return 'WORD', s

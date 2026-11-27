@@ -9,6 +9,9 @@ dist/
 # output of tools/fuzz_compare.py
 fuzz-failures/
 
+# the description of the LR automaton that Larkita writes for jasmin.g
+pytunia/jasmin.out
+
 # macOS
 .DS_Store
 

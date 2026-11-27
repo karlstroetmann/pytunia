@@ -172,8 +172,7 @@ class Main(object):
             _print(self.err, iocause)
             sys.exit(-1)
         except JasError as e:
-            class_file.report_error("JAS Error: " + e.get_message(),
-                                    e.num_tag)
+            class_file.report_error("JAS Error: " + e.get_message())
         except JavaException as e:
             class_file.report_error("%s: exception - <%s> %s."
                                     % (fname, e.java_class, e.get_message()))

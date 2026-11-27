@@ -4,8 +4,9 @@ Differential testing of the Python port against the original Jasmin.
 
 Random mutations of the given Jasmin files (lines deleted, duplicated or
 swapped, tokens replaced, characters inserted, ...) are assembled with
-both versions, and the outputs (standard output, standard error and the
-generated class files) are compared.  Files that produce different
+both versions, and the results are compared: the generated class files,
+the standard output, the exit status, and which files contain errors.
+(The error messages themselves differ.)  Files that produce different
 results are saved for inspection.
 
 usage: python3 fuzz_compare.py [-n ROUNDS] [-b BATCH] [-s SEED]
@@ -89,7 +90,12 @@ def mutate(text, rnd):
     return '\n'.join(lines)
 
 
+_FOUND_RE = re.compile(r'^(.*): Found \d+ errors$', re.M)
+
+
 def run(command, files, workdir, outdir):
+    """Assembles the files; returns the standard output, the exit status,
+    the class files and the names of the files with errors."""
     proc = subprocess.run(command + ['-d', outdir] + files, cwd=workdir,
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     classes = {}
@@ -99,8 +105,9 @@ def run(command, files, workdir, outdir):
             with open(path, 'rb') as f:
                 classes[os.path.relpath(path, outdir)] = f.read()
     out = proc.stdout.decode('utf-8', 'replace').replace(outdir, '<OUT>')
-    err = proc.stderr.decode('utf-8', 'replace').replace(outdir, '<OUT>')
-    return out, err, proc.returncode, classes
+    err = proc.stderr.decode('utf-8', 'replace')
+    failed = sorted(_FOUND_RE.findall(err))
+    return out, proc.returncode, classes, failed
 
 
 def main():
@@ -150,7 +157,7 @@ def main():
                 shutil.rmtree(pout)
             if rj == rp:
                 print('round %d: %d files ok, %d class files'
-                      % (rnd_no, len(names), len(rj[3])))
+                      % (rnd_no, len(names), len(rj[2])))
                 continue
             for name in names:
                 jout, pout = tempfile.mkdtemp(), tempfile.mkdtemp()
@@ -167,15 +174,17 @@ def main():
                     shutil.copy(os.path.join(work, name), keep)
                     print('round %d: %s DIFFERS (saved as %s)'
                           % (rnd_no, name, keep))
-                    for label, a, b in (('stdout', rj[0], rp[0]),
-                                        ('stderr', rj[1], rp[1])):
-                        if a != b:
-                            print('  java   %s: %r' % (label, a[-300:]))
-                            print('  python %s: %r' % (label, b[-300:]))
+                    if rj[0] != rp[0]:
+                        print('  java   stdout: %r' % rj[0][-300:])
+                        print('  python stdout: %r' % rp[0][-300:])
+                    if rj[1] != rp[1]:
+                        print('  status: java %d, python %d' % (rj[1], rp[1]))
                     if rj[2] != rp[2]:
-                        print('  status: java %d, python %d' % (rj[2], rp[2]))
-                    if rj[3] != rp[3]:
                         print('  class files differ')
+                    if rj[3] != rp[3]:
+                        print('  errors: java %s, python %s'
+                              % ('yes' if rj[3] else 'no',
+                                 'yes' if rp[3] else 'no'))
         finally:
             shutil.rmtree(work)
     print('%d difference(s)' % failures)

@@ -2,6 +2,10 @@
 The ClassFile class: uses the parser and the jas package to create Java
 class files (port of jasmin.ClassFile).
 
+read_jasmin() parses the source (scanner.py, parser.py) and hands the
+abstract syntax tree to translator.py, which calls the methods of
+ClassFile that build the class (set_class, new_method, plant, ...).
+
 A ClassFile object represents the binary data that makes up a Java class
 file.  This is the low-level interface of the assembler, with the same
 methods as the Java version (most programs will use pytunia.assemble() or
@@ -36,9 +40,10 @@ from .javacompat import (JavaException, JavaInteger, JavaLong, JavaFloat,
                          parse_int, parse_short, substring, int_value,
                          long_value, float_value, double_value,
                          to_java_string, from_java_string, printable)
-from .parser import Parser
+from .parser import UnexpectedToken, parse, syntax_error_message
 from .scanner import (Scanner, split_class_method_signature,
                       split_class_field)
+from .translator import Translator
 
 
 def _int32(v):
@@ -87,6 +92,8 @@ class ClassFile(object):
         self.class_env = None
         self.class_name = None
         self.source_name = None
+        self.source_lines = []
+        # the scanner while the source is parsed (for error messages)
         self.scanner = None
         # state info for the current method being defined
         self.except_attr = None
@@ -102,7 +109,9 @@ class ClassFile(object):
         self.verifyframe = None
         self.cur_annotation = None
         self.line_label_count = 0
-        self.line_num = 0
+        # the line of the statement that is translated (for line number
+        # tables and error messages)
+        self.line_num = None
         self.stack_map_label_count = 0
         self._auto_number = False
         self.class_header = False
@@ -118,39 +127,41 @@ class ClassFile(object):
     # error reporting
     # ------------------------------------------------------------------
 
-    def report_error(self, msg, bad_int_val=False):
+    def report_error(self, msg, line=None, column=None):
+        """Reports an error in the line ``line`` of the source, at the
+        column ``column`` (both counted from 1; the column may be None).
+        Without a line, the error is reported at the position of the
+        scanner while the source is parsed, and at the statement that is
+        translated afterwards."""
         self.errors += 1
+        if line is None:
+            if self.scanner is not None:
+                line, column = self.scanner.error_position()
+            else:
+                line = self.line_num
         filename = "null" if self.filename is None else self.filename
-        out = [filename, ":"]
-        dia_linnum = dia_line = column = None
-        scanner = self.scanner
-        if scanner is None:
-            out.append(" " + msg + ".")
+        sentence = msg if msg.endswith(".") else msg + "."
+        source_line = None
+        if line is None:
+            text = "%s: %s" % (filename, sentence)
         else:
-            if bad_int_val and scanner.char_num >= 0:
-                dia_line = scanner.int_line
-                dia_linnum = scanner.int_line_num
-                dia_charpos = scanner.int_char_num
-            else:
-                dia_line = scanner.line
-                dia_linnum = scanner.line_num
-                dia_charpos = scanner.char_num
-            out.append("%d: %s." % (dia_linnum, msg))
-            if scanner.char_num >= 0:
-                if dia_line is None:
-                    dia_line = "null"
-                out.append("\n" + dia_line + "\n")
-                # print out where on the line the scanner got to
-                out.append(''.join('\t' if c == '\t' else ' '
-                                   for c in dia_line[:dia_charpos]))
-                out.append("^")
-                column = len(from_java_string(dia_line[:dia_charpos]))
-                dia_line = printable(dia_line)
-            else:
-                dia_line = None
-        text = printable(''.join(out))
+            text = "%s:%d: %s" % (filename, line, sentence)
+            if 0 < line <= len(self.source_lines):
+                source_line = self.source_lines[line - 1].rstrip("\r")
+                text += "\n" + source_line
+                if column is not None:
+                    # point at the column (tabs are kept, so that the
+                    # caret is aligned)
+                    prefix = source_line[:column - 1]
+                    text += "\n" + "".join(
+                        "\t" if c == "\t" else " " for c in prefix) + "^"
+                    column = len(from_java_string(prefix))
+                source_line = printable(source_line)
+        if source_line is None:
+            column = None
+        text = printable(text)
         self.diagnostics.append(Diagnostic(
-            printable(filename), dia_linnum, printable(msg), dia_line,
+            printable(filename), line, printable(msg), source_line,
             column, text))
         if self.err is not None:
             self.err.write(text + "\n")
@@ -421,7 +432,7 @@ class ClassFile(object):
     def begin_stack_n(self, n):
         """define a new stack map frame and copy n previous elements"""
         if n <= 0:
-            raise JasError("Invalid counter", True)
+            raise JasError("Invalid counter")
         self.verifyframe = VerifyFrame(self._prev_stack(n))
 
     def plant_stack_offset(self, n):
@@ -593,7 +604,7 @@ class ClassFile(object):
             self.buffer_insn(Insn.with_int(insn.opcode, atype, False))
         elif "label" in args:
             self.buffer_insn(Insn.with_label(insn.opcode, self.get_label(val),
-                                             self.scanner.line_num))
+                                             self.line_num))
         elif args == "class":
             self.buffer_insn(Insn.with_cp(insn.opcode, ClassCP(val)))
         else:
@@ -685,8 +696,9 @@ class ClassFile(object):
     # ------------------------------------------------------------------
 
     def set_line(self, line):
-        """Used by the parser to tell ClassFile the line number of the
-        next statement (used by the auto_number mechanism)."""
+        """Used by the translator to tell ClassFile the line number of the
+        next statement (used by the auto_number mechanism and in error
+        messages)."""
         self.line_num = line
 
     def auto_number(self):
@@ -815,7 +827,7 @@ class ClassFile(object):
     @staticmethod
     def check_limit(v):
         if v < 0 or v > 65535:
-            raise JasError("Illegal limit value", True)
+            raise JasError("Illegal limit value")
         return v
 
     def set_stack_size(self, v):
@@ -869,6 +881,8 @@ class ClassFile(object):
         # initialize variables for error reporting
         self.errors = 0
         self.diagnostics = []
+        self.scanner = None
+        self.line_num = None
         self.source_given = False
         self.filename = name
         self.source_name = name
@@ -880,13 +894,23 @@ class ClassFile(object):
         # if number_lines is true, we output LineTableAttrs that indicate
         # what line numbers the Jasmin code falls on
         self._auto_number = bool(number_lines)
-        # parse the input file
         self.class_env = ClassEnv()
         if not isinstance(source, str):
             source = source.read()
-        self.scanner = Scanner(to_java_string(source))
-        parser = Parser(self, self.scanner)
-        parser.parse()
+        text = to_java_string(source)
+        self.source_lines = text.split("\n")
+        # parse the input file
+        self.scanner = Scanner(text)
+        try:
+            tree = parse(self.scanner)
+        except UnexpectedToken as e:
+            self.report_error(syntax_error_message(e), e.token.line,
+                              e.token.column)
+            return
+        self.scanner = None
+        # build the class
+        Translator(self).translate(tree)
+        self.line_num = None
 
     def error_count(self):
         """Returns the number of warnings/errors encountered while parsing

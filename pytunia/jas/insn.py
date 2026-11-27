@@ -370,7 +370,7 @@ class Insn(object):
         insn = cls(opc)
         if opc == rc.OPC_BIPUSH:
             if val > 127 or val < -128:
-                raise JasError("bipush value exceed size of byte", True)
+                raise JasError("bipush value exceed size of byte")
             insn.operand = ByteOperand(val)
         elif opc == rc.OPC_SIPUSH or opc in _BRANCHES:
             cls._check_short(val, opc)
@@ -379,7 +379,7 @@ class Insn(object):
             insn.operand = OffsetOperand(insn, val, True)
         elif opc == rc.OPC_NEWARRAY:
             if val < 0 or val > 255:
-                raise JasError("newarray counter is illegal", True)
+                raise JasError("newarray counter is illegal")
             insn.operand = UnsignedByteOperand(val)
         elif opc in _LOCAL_VAR_INSNS:
             insn.operand = UnsignedByteWideOperand(val, wide)

@@ -155,7 +155,7 @@ class AnnotationElement(object):
                     badval = val < -32768 or val > 32767
                 if badval:
                     raise JasError("annotation field value exceed range "
-                                   "of type", True)
+                                   "of type")
                 cp = IntegerCP(val)
         elif sign == TYPE_FLOAT:
             if isinstance(value, JavaFloat):

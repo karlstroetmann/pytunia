@@ -5,7 +5,9 @@ Tests for the Python port of Jasmin.
 Every test case in cases/ is assembled with the Python version and the
 results (class files, standard output, standard error and exit status)
 are compared with the results of the Java version, which were recorded
-by make_expected.py in expected/.
+by make_expected.py in expected/.  pytunia's error messages differ from
+those of Jasmin; for the cases with errors, expected_errors.py describes
+what is checked instead.
 
 Run with:  python3 -m unittest discover -s tests     (in directory Python)
       or:  python3 tests/test_cli.py
@@ -24,6 +26,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, HERE)
 
 from make_expected import EXPECTED, case_names, run_case  # noqa
+from expected_errors import check_error_report  # noqa
 
 from pytunia import javacompat  # noqa
 from pytunia.javacompat import JavaHashtable, string_hash  # noqa
@@ -71,7 +74,10 @@ def _make_test(name):
             shutil.rmtree(outdir)
         e_stdout, e_stderr, e_status, e_classes = read_expected(name)
         self.assertEqual(e_stdout, stdout, 'stdout differs')
-        self.assertEqual(e_stderr, stderr, 'stderr differs')
+        if e_classes:
+            self.assertEqual(e_stderr, stderr, 'stderr differs')
+        else:
+            check_error_report(self, name, stderr)
         self.assertEqual(e_status, status, 'exit status differs')
         self.assertEqual(sorted(e_classes), sorted(classes),
                          'different class files generated')

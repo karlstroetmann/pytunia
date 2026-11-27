@@ -231,7 +231,7 @@ class Method(object):
     def add_param_annotation(self, visible, clsname, paramnum):
         if paramnum <= 0 or paramnum >= 256:
             raise JasError("annotation parameter number can be in range "
-                           "1-256", True)
+                           "1-256")
         ann = Annotation.named(clsname)
         aa = self.ann_param_vis if visible else self.ann_param_invis
         if aa is None:
