@@ -5,8 +5,8 @@ pytunia is a Python port of Jasmin 2.4, the assembler for the JVM. It turns
 the original `jasmin.jar`. That is the one hard requirement: every change must
 keep the class files identical. Error messages do *not* have to match Jasmin's.
 
-The one deliberate exception (README, "Dots in class names"): class names may
-be written with dots (`java.lang.Object`) everywhere, also in descriptors.
+There are two deliberate exceptions. First (README, "Dots in class names"):
+class names may be written with dots (`java.lang.Object`) everywhere, also in descriptors.
 Jasmin converts the dots to slashes only in some places and copies them into
 the class file elsewhere, which makes it invalid; pytunia converts them
 everywhere except in generic signatures (`.signature`) and strings. So only
@@ -15,6 +15,18 @@ The conversion happens with `convert_dots` where names enter: in
 translator.py (like Jasmin's parser actions), in the `plant_*` methods of
 classfile.py (operands of instructions) and in jas/annotation.py (`c`
 values). `tests/test_dots.py` tests it.
+
+Second (README, "Types in Java notation"): types may be written as in Java,
+e.g. `main(java.lang.String[]) void` or `getstatic java.lang.System.out
+java.io.PrintStream`. `parser.join_signatures` joins the words of a method
+signature that the scanner split at blanks (only after `.method`,
+`.enclosing method` and the invoke instructions); javatypes.py translates the
+types into descriptors at the same places as `convert_dots` (but not in
+annotations). A word that is a valid descriptor keeps its meaning, and a word
+that is neither stays unchanged, so every source that Jasmin accepts gives
+the same class file as before, unless Jasmin's is invalid. Jasmin rejects the
+joined signatures, so this is the one place where pytunia accepts more than
+Jasmin. `tests/test_java_types.py` tests it.
 
 It needs Python 3.12+ and one dependency, the parser generator
 [Larkita](https://github.com/karlstroetmann/Larkita) (by the same author as
@@ -29,7 +41,9 @@ pytunia/
   main.py          command line (python3 -m pytunia), port of jasmin.Main
   diagnostics.py   Diagnostic and AssemblyError
   jasmin.g         the grammar (Larkita syntax); string literals = reserved words
-  parser.py        builds the Larkita parser from jasmin.g at import; parse(scanner)
+  parser.py        builds the Larkita parser from jasmin.g at import; parse(scanner);
+                   join_signatures joins signatures in Java notation (new in pytunia)
+  javatypes.py     types in Java notation -> descriptors (new in pytunia)
   scanner.py       hand-written tokenizer (port of jasmin.Scanner), yields larkita.Token
   translator.py    walks the AST and calls ClassFile (= the semantic actions of parser.cup)
   classfile.py     ClassFile: builds the class (port of jasmin.ClassFile), reports errors
@@ -42,6 +56,7 @@ tests/
   expected_errors.py  line of the first error for every case with errors
   test_api.py, test_cli.py, make_expected.py
   test_dots.py     the extension "Dots in class names" (no jasmin.jar results)
+  test_java_types.py  the extension "Types in Java notation" (no jasmin.jar results)
 tools/fuzz_compare.py   differential fuzzing against jasmin.jar
 ```
 
@@ -78,7 +93,8 @@ statement.
 
 Edit `jasmin.g` and the matching `case` in translator.py. The language must
 stay the same as Jasmin's: anything Jasmin accepts must be accepted, and
-anything it rejects must be rejected. To check for conflicts, run
+anything it rejects must be rejected (except the method signatures in Java
+notation, see above). To check for conflicts, run
 
     python3 -c "from larkita import Larkita; Larkita.open('pytunia/jasmin.g', lexer='basic')"
 

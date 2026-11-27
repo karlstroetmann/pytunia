@@ -12,18 +12,28 @@ The methods of ClassFile are called in the same order and with the same
 arguments as by the semantic actions of Jasmin's parser (parser.cup), so
 that the class files are identical to those of Jasmin.
 
-There is one extension: Jasmin converts the dots in class names to
-slashes (convert_dots) only in some places, e.g. in ".super" and in the
-signatures of methods.  pytunia also converts them in the descriptors of
-fields and local variables, in stack map frames, in ".enclosing method"
-and in the types of annotation elements; classfile.py does the same for
-the operands of instructions.  So "java.lang.Object" can be written
-wherever "java/lang/Object" can.  Generic signatures (".signature") are
-not converted, since there a dot separates the name of an inner class.
+There are two extensions (see README):
+
+* Dots in class names.  Jasmin converts the dots in class names to
+  slashes (convert_dots) only in some places, e.g. in ".super" and in the
+  signatures of methods.  pytunia also converts them in the descriptors of
+  fields and local variables, in stack map frames, in ".enclosing method"
+  and in the types of annotation elements; classfile.py does the same for
+  the operands of instructions.  So "java.lang.Object" can be written
+  wherever "java/lang/Object" can.  Generic signatures (".signature") are
+  not converted, since there a dot separates the name of an inner class.
+* Types in Java notation, e.g. "java.io.PrintStream" for
+  "Ljava/io/PrintStream;" and "main(java.lang.String[]) void" for
+  "main([Ljava/lang/String;)V" (javatypes.py): in the signatures of
+  methods (scanner.split_method_signature and
+  split_class_method_signature), in the descriptors of fields and local
+  variables, in stack map frames and in the operands of instructions.
+  Annotations keep the notation of the JVM.
 """
 
 from .jas import constants as rc
 from .javacompat import JavaInteger
+from .javatypes import class_operand, field_descriptor
 from .scanner import convert_dots, split_method_signature
 
 
@@ -216,18 +226,18 @@ class Translator(object):
             case (".field", access, ("WORD", name), ("WORD", descriptor),
                   ("signature", ("STR", signature)), value, _):
                 cf.add_field(_short(_access(access)), name,
-                             convert_dots(descriptor), signature,
+                             field_descriptor(descriptor), signature,
                              self.field_value(value))
             case (".field", access, ("WORD", name), ("WORD", descriptor),
                   value, _):
                 cf.add_field(_short(_access(access)), name,
-                             convert_dots(descriptor), None,
+                             field_descriptor(descriptor), None,
                              self.field_value(value))
             case (".field block", ("field_start", access, ("WORD", name),
                                    ("WORD", descriptor), value, _),
                   *attributes, ("EOL", end_line)):
                 cf.begin_field(_short(_access(access)), name,
-                               convert_dots(descriptor),
+                               field_descriptor(descriptor),
                                self.field_value(value))
                 for attribute in attributes:
                     cf.set_line(_line(attribute))
@@ -349,17 +359,18 @@ class Translator(object):
         match node:
             case (".var", ("INT", register), ("WORD", name),
                   ("WORD", descriptor), signature):
-                cf.add_var(None, None, name, convert_dots(descriptor),
+                cf.add_var(None, None, name, field_descriptor(descriptor),
                            _optional(signature), register)
             case (".var", ("INT", register), ("WORD", name),
                   ("WORD", descriptor), signature, ("WORD", start),
                   ("WORD", end)):
-                cf.add_var(start, end, name, convert_dots(descriptor),
+                cf.add_var(start, end, name, field_descriptor(descriptor),
                            _optional(signature), register)
             case (".var", ("INT", register), ("WORD", name),
                   ("WORD", descriptor), signature, ("INT", start),
                   ("INT", end)):
-                cf.add_var_offsets(start, end, name, convert_dots(descriptor),
+                cf.add_var_offsets(start, end, name,
+                                   field_descriptor(descriptor),
                                    _optional(signature), register)
             case ((".limit", "locals"), ("INT", n)):
                 cf.set_var_size(n)
@@ -408,7 +419,7 @@ class Translator(object):
                 case (kind, ("WORD", type_), ("INT", n), _):
                     value = str(n)
             if type_ == "Object" and value is not None:
-                value = convert_dots(value)     # a class name
+                value = class_operand(value)    # a class or an array type
             if kind == "locals":
                 cf.plant_stack_locals(type_, value)
             else:

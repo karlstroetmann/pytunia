@@ -5,9 +5,12 @@
 pytunia is a Python port of [Jasmin 2.4](https://jasmin.sourceforge.net/).
 It translates assembly code for the Java Virtual Machine (`.j` files) into
 Java class files, and it produces **byte-for-byte the same class files** as
-the original `jasmin.jar`. There is one extension: class names can be
+the original `jasmin.jar`. There are two extensions: class names can be
 written with dots, e.g. `java.lang.Object` instead of `java/lang/Object`
-(see [Dots in class names](#dots-in-class-names)).
+(see [Dots in class names](#dots-in-class-names)), and types can be written
+as in Java, e.g. `main(java.lang.String[]) void` instead of
+`main([Ljava/lang/String;)V` (see
+[Types in Java notation](#types-in-java-notation)).
 
 pytunia is a library written in pure Python. It needs Python 3.12 or newer
 and the parser generator [Larkita](https://github.com/karlstroetmann/Larkita),
@@ -42,17 +45,18 @@ pip install git+https://github.com/karlstroetmann/pytunia
 .end method
 ```
 
-The same program can also be written with dots:
+With dots in the class names and the types in Java notation, the same
+program reads:
 
 ```
 .class public HelloWorld
 .super java.lang.Object
 
-.method public static main([Ljava.lang.String;)V
+.method public static main(java.lang.String[]) void
     .limit stack 2
-    getstatic java.lang.System.out Ljava.io.PrintStream;
+    getstatic java.lang.System.out java.io.PrintStream
     ldc "Hello, World!"
-    invokevirtual java.io.PrintStream.println(Ljava.lang.String;)V
+    invokevirtual java.io.PrintStream.println(java.lang.String) void
     return
 .end method
 ```
@@ -163,9 +167,11 @@ These details of the Java version had to be reproduced exactly:
 * **Parsing.** The grammar in `pytunia/jasmin.g` describes the same language
   as Jasmin's grammar (`parser.cup`), and pytunia's scanner splits the source
   into tokens as Jasmin's scanner does. A source file that Jasmin accepts is
-  accepted by pytunia, and vice versa. The methods that build the class are
-  called in the same order and with the same arguments as by the actions of
-  Jasmin's parser.
+  accepted by pytunia, and vice versa, except for method signatures in Java
+  notation, which only pytunia accepts (see
+  [Types in Java notation](#types-in-java-notation)). The methods that
+  build the class are called in the same order and with the same arguments
+  as by the actions of Jasmin's parser.
 * **Constant pool order.** Jasmin stores constant pool entries in a
   `java.util.Hashtable` keyed by strings and writes them in the table's
   enumeration order. pytunia reproduces this order (`String.hashCode`, bucket
@@ -213,10 +219,65 @@ of `.field` and `.var`, it copies the dots into the class file, which is
 then invalid. Only for these sources does pytunia produce a different class
 file than Jasmin.
 
+### Types in Java notation
+
+Types can also be written as in Java, with fully qualified class names,
+instead of the descriptors of the JVM:
+
+| Java notation | descriptor |
+|---|---|
+| `int`, `boolean`, `long[]` | `I`, `Z`, `[J` |
+| `java.lang.String` | `Ljava/lang/String;` |
+| `java.lang.String[][]` | `[[Ljava/lang/String;` |
+| `main(java.lang.String[]) void` | `main([Ljava/lang/String;)V` |
+| `max(int, int) int` | `max(II)I` |
+
+The parameters of a method are separated by commas, and the return type
+follows the closing parenthesis; blanks are allowed, but the signature must
+be written on one line. The Java notation can be used
+
+* in the signatures of `.method` and `.enclosing method`,
+* in the method references of the `invoke...` instructions, e.g.
+  `invokevirtual java.io.PrintStream.println(java.lang.String) void` and
+  `invokeinterface java.util.List.size() int 1`,
+* for the types of fields and local variables, e.g.
+  `getstatic java.lang.System.out java.io.PrintStream` and in `.field` and
+  `.var`,
+* for array types in the operands of `checkcast`, `instanceof`,
+  `anewarray`, `multianewarray` and `ldc`, and in `.stack` frames, e.g.
+  `checkcast int[]` and `multianewarray int[][] 2`.
+
+Annotations and generic signatures (`.signature`) keep the notation of the
+JVM.
+
+Both notations can be mixed. A word that is a valid descriptor keeps its
+meaning, so every Jasmin source is translated as before. This matters only
+for classes in the default package:
+
+* `I` is the type `int`. A class whose name is one of the letters `B`, `C`,
+  `D`, `F`, `I`, `J`, `S` and `Z` must be written as a descriptor, e.g.
+  `LI;`.
+* A parameter list without commas is read as a list of descriptors if it is
+  one: `(IJ)` has the parameters `int` and `long`. A single parameter whose
+  class name consists of these letters only, e.g. a class `ID`, must be
+  written as a descriptor: `(LID;)`.
+
+As in the JVM, the name of an inner class contains a `$`:
+`java.util.Map$Entry`, not `java.util.Map.Entry`. Generic types
+(`java.util.List<java.lang.String>`) and variable arguments
+(`java.lang.String...`) are not supported.
+
+Jasmin does not know this notation. It rejects signatures with blanks, and
+it copies the other types unchanged into the class file, which is then
+invalid.
+
 ### Known differences
 
 * Class names with dots are converted to slashes in more places than in
   Jasmin (see [Dots in class names](#dots-in-class-names)).
+* Types can be written in Java notation (see
+  [Types in Java notation](#types-in-java-notation)). So pytunia accepts
+  some sources that Jasmin rejects.
 * The error messages are different (see [Errors](#errors)). pytunia
   reports at most one syntax error, while Jasmin tries to continue after a
   syntax error.
@@ -256,14 +317,19 @@ method names are converted to snake_case.
    objects). Reserved words get the terminals of their string literals in
    the grammar; the other tokens are `EOL`, `WORD`, `INSN`, `STR`, `INT`,
    `NUM` and `RELATIVE` (see the comment at the top of `jasmin.g`).
-2. `pytunia.parser.parse` parses the tokens with the canonical LR(1) parser
+2. `pytunia.parser.join_signatures` joins the words of method signatures in
+   Java notation that the scanner has split at blanks, e.g. `max(int,`,
+   `int)` and `int` become `max(int, int) int`.
+3. `pytunia.parser.parse` parses the tokens with the canonical LR(1) parser
    that Larkita generates from `jasmin.g` when pytunia is imported. The
    result is an abstract syntax tree made of nested tuples, e.g.
    `(".super", ("WORD", "java/lang/Object"), ("EOL", 2))`; an `EOL` token
    holds the line where its statement started.
-3. `pytunia.translator.Translator` walks the tree with `match` statements and
+4. `pytunia.translator.Translator` walks the tree with `match` statements and
    calls the methods of `ClassFile` (`set_class`, `new_method`, `plant`, ...).
-4. `ClassFile.to_bytes` writes the class file with the `jas` package.
+   Types in Java notation are translated into descriptors by the functions
+   in `pytunia/javatypes.py`.
+5. `ClassFile.to_bytes` writes the class file with the `jas` package.
 
 To change the syntax, edit `jasmin.g` and the matching case in
 `translator.py`. To see the automaton that Larkita builds, including any
@@ -297,6 +363,10 @@ class files, standard output, standard error and exit status.
   [Dots in class names](#dots-in-class-names): a source that uses every
   kind of class name and descriptor must give the same class file when all
   its slashes are written as dots.
+* `tests/test_java_types.py` checks the extension
+  [Types in Java notation](#types-in-java-notation): a class written in
+  Java notation must give the same class file as the same class written with
+  descriptors.
 * `tests/test_cli.py` runs the command line (`python3 -m pytunia`) on every
   case and compares the class files, standard output and exit status with
   those of the Java version, and standard error for the cases without
@@ -320,9 +390,11 @@ python3 tests/make_expected.py ../jasmin-2.4/jasmin.jar
 
 `tools/fuzz_compare.py` runs randomly mutated Jasmin files through both
 versions and reports any file where the class files, the standard output,
-the exit status or the presence of errors differ. Class files that differ
-because a mutation put a dot into a class name are expected (see
-[Dots in class names](#dots-in-class-names)).
+the exit status or the presence of errors differ. Differences caused by the
+extensions are expected: a mutation can put a dot into a class name or a
+type in Java notation (e.g. `int`) where Jasmin expects a descriptor (see
+[Dots in class names](#dots-in-class-names) and
+[Types in Java notation](#types-in-java-notation)).
 
 ```
 python3 tools/fuzz_compare.py --jar ../jasmin-2.4/jasmin.jar -n 20 tests/cases/*.j

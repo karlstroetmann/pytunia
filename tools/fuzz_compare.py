@@ -7,9 +7,10 @@ swapped, tokens replaced, characters inserted, ...) are assembled with
 both versions, and the results are compared: the generated class files,
 the standard output, the exit status, and which files contain errors.
 (The error messages themselves differ.)  Files that produce different
-results are saved for inspection.  Class files that differ because a
-mutation put a dot into a class name are expected, since pytunia converts
-dots in more places than Jasmin (README, "Dots in class names").
+results are saved for inspection.  Differences caused by pytunia's
+extensions are expected: a mutation can put a dot into a class name or a
+type in Java notation (e.g. "int") where Jasmin expects a descriptor
+(README, "Dots in class names" and "Types in Java notation").
 
 usage: python3 fuzz_compare.py [-n ROUNDS] [-b BATCH] [-s SEED]
                                [--jar JASMIN_JAR] [--keep DIR] files...

@@ -41,7 +41,8 @@ from .javacompat import (JavaException, JavaInteger, JavaLong, JavaFloat,
                          long_value, float_value, double_value,
                          to_java_string, from_java_string, printable)
 from .parser import UnexpectedToken, parse, syntax_error_message
-from .scanner import (Scanner, convert_dots, split_class_method_signature,
+from .javatypes import class_operand, field_descriptor
+from .scanner import (Scanner, split_class_method_signature,
                       split_class_field)
 from .translator import Translator
 
@@ -580,8 +581,8 @@ class ClassFile(object):
             split = split_class_method_signature(val)
             self.buffer_insn(InvokeinterfaceInsn(InterfaceCP(*split), nargs))
         elif insn.args == "marray":
-            # (pytunia converts dots, Jasmin 2.4 does not: see README)
-            self.buffer_insn(MultiarrayInsn(ClassCP(convert_dots(val)),
+            # (pytunia converts dots and Java types, Jasmin 2.4 does not)
+            self.buffer_insn(MultiarrayInsn(ClassCP(class_operand(val)),
                                             nargs))
         else:
             raise JasError("Bad arguments for instruction " + name)
@@ -598,9 +599,9 @@ class ClassFile(object):
             split = split_class_method_signature(val)
             self.buffer_insn(Insn.with_cp(insn.opcode, MethodCP(*split)))
         elif args == "constant":
-            # (pytunia converts dots, Jasmin 2.4 does not: see README)
+            # (pytunia converts dots and Java types, Jasmin 2.4 does not)
             self.buffer_insn(Insn.with_cp(insn.opcode,
-                                          ClassCP(convert_dots(val))))
+                                          ClassCP(class_operand(val))))
         elif args == "atype":
             atype = _ARRAY_TYPES.get(val)
             if atype is None:
@@ -610,9 +611,9 @@ class ClassFile(object):
             self.buffer_insn(Insn.with_label(insn.opcode, self.get_label(val),
                                              self.line_num))
         elif args == "class":
-            # (pytunia converts dots, Jasmin 2.4 does not: see README)
+            # (pytunia converts dots and Java types, Jasmin 2.4 does not)
             self.buffer_insn(Insn.with_cp(insn.opcode,
-                                          ClassCP(convert_dots(val))))
+                                          ClassCP(class_operand(val))))
         else:
             raise JasError("(gloups)Bad arguments for instruction " + name)
 
@@ -627,11 +628,11 @@ class ClassFile(object):
             cls, fld = split_class_field(v1)
             if fld is None:
                 raise JasError("can't extract field from " + v1)
-            # (pytunia converts the dots in the descriptor v2, Jasmin 2.4
-            # does not: see README)
+            # (pytunia converts dots and Java types in the descriptor v2,
+            # Jasmin 2.4 does not)
             self.buffer_insn(Insn.with_cp(info.opcode,
                                           FieldCP(cls, fld,
-                                                  convert_dots(v2))))
+                                                  field_descriptor(v2))))
         else:
             raise JasError("Bad arguments for instruction " + name)
 

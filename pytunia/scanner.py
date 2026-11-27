@@ -16,6 +16,7 @@ from .jas.errors import JasError
 from .javacompat import (JavaException, JavaInteger, JavaLong, JavaFloat,
                          JavaDouble, parse_int, parse_long, parse_double,
                          java_digit, substring, char_at, to_float32)
+from .javatypes import method_descriptor
 from .parser import KEYWORDS
 
 
@@ -74,7 +75,8 @@ def convert_chars(orig_name, chars, to_char):
 
 def split_class_method_signature(name):
     """Splits a string like "a/b/c/d(xyz)v" into the three strings
-    "a/b/c", "d" and "(xyz)v"."""
+    "a/b/c", "d" and "(xyz)v".  (pytunia: the signature can also be
+    written in Java notation, see javatypes.py.)"""
     pos = 0
     sigpos = 0
     for i, c in enumerate(name):
@@ -86,7 +88,7 @@ def split_class_method_signature(name):
     try:
         return (convert_dots(substring(name, 0, pos)),
                 substring(name, pos + 1, sigpos),
-                convert_dots(substring(name, sigpos)))
+                method_descriptor(substring(name, sigpos)))
     except JavaException:
         raise JavaException("java.lang.IllegalArgumentException",
                             "malformed signature : " + name)
@@ -107,11 +109,12 @@ def split_class_field(name):
 
 def split_method_signature(name):
     """Splits a string like "main(Ljava/lang/String;)V" into the two
-    strings "main" and "(Ljava/lang/String;)V"."""
+    strings "main" and "(Ljava/lang/String;)V".  (pytunia: the signature
+    can also be written in Java notation, see javatypes.py.)"""
     sigpos = name.find('(')
     if sigpos < 0:
         sigpos = 0
-    return name[:sigpos], convert_dots(name[sigpos:])
+    return name[:sigpos], method_descriptor(name[sigpos:])
 
 
 # ---------------------------------------------------------------------------
