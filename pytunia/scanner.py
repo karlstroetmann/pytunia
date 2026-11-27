@@ -61,7 +61,9 @@ def convert_number(s):
 
 
 def convert_dots(orig_name):
-    """Maps '.' characters to '/' characters in a string."""
+    """Maps '.' characters to '/' characters in a string, so that class
+    names can be written as in Java ("java.lang.Object") or in the
+    internal form of the JVM ("java/lang/Object")."""
     return orig_name.replace('.', '/')
 
 

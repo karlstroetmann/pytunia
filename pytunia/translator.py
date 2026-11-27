@@ -11,6 +11,15 @@ line where the statement started.
 The methods of ClassFile are called in the same order and with the same
 arguments as by the semantic actions of Jasmin's parser (parser.cup), so
 that the class files are identical to those of Jasmin.
+
+There is one extension: Jasmin converts the dots in class names to
+slashes (convert_dots) only in some places, e.g. in ".super" and in the
+signatures of methods.  pytunia also converts them in the descriptors of
+fields and local variables, in stack map frames, in ".enclosing method"
+and in the types of annotation elements; classfile.py does the same for
+the operands of instructions.  So "java.lang.Object" can be written
+wherever "java/lang/Object" can.  Generic signatures (".signature") are
+not converted, since there a dot separates the name of an inner class.
 """
 
 from .jas import constants as rc
@@ -118,7 +127,7 @@ class Translator(object):
                 case (".implements", ("WORD", name), _):
                     cf.add_interface(convert_dots(name))
                 case (".enclosing", ("WORD", method), _):
-                    cf.set_enclosing_method(method)
+                    cf.set_enclosing_method(convert_dots(method))
                 case (".debug", ("STR", extension), _):
                     cf.set_source_debug_extension(extension)
                 case _:
@@ -150,8 +159,9 @@ class Translator(object):
             case (".annotation default", ("EOL", _), ("WORD", descriptor),
                   *sub_type, values):
                 cf.add_default_annotation()
-                cf.add_annotation_field(None, descriptor,
-                                        sub_type[0][1] if sub_type else None)
+                cf.add_annotation_field(
+                    None, descriptor,
+                    convert_dots(sub_type[0][1]) if sub_type else None)
                 self.annotation_values(values)
                 cf.end_annotation()
 
@@ -168,7 +178,8 @@ class Translator(object):
             match field:
                 case ("=", ("WORD", name), ("WORD", descriptor),
                       ("WORD", sub_type), values):
-                    cf.add_annotation_field(name, descriptor, sub_type)
+                    cf.add_annotation_field(name, descriptor,
+                                            convert_dots(sub_type))
                     self.annotation_values(values)
                 case ("=", ("WORD", name), ("WORD", descriptor), values):
                     cf.add_annotation_field(name, descriptor, None)
@@ -204,16 +215,19 @@ class Translator(object):
         match node:
             case (".field", access, ("WORD", name), ("WORD", descriptor),
                   ("signature", ("STR", signature)), value, _):
-                cf.add_field(_short(_access(access)), name, descriptor,
-                             signature, self.field_value(value))
+                cf.add_field(_short(_access(access)), name,
+                             convert_dots(descriptor), signature,
+                             self.field_value(value))
             case (".field", access, ("WORD", name), ("WORD", descriptor),
                   value, _):
-                cf.add_field(_short(_access(access)), name, descriptor, None,
+                cf.add_field(_short(_access(access)), name,
+                             convert_dots(descriptor), None,
                              self.field_value(value))
             case (".field block", ("field_start", access, ("WORD", name),
                                    ("WORD", descriptor), value, _),
                   *attributes, ("EOL", end_line)):
-                cf.begin_field(_short(_access(access)), name, descriptor,
+                cf.begin_field(_short(_access(access)), name,
+                               convert_dots(descriptor),
                                self.field_value(value))
                 for attribute in attributes:
                     cf.set_line(_line(attribute))
@@ -335,17 +349,17 @@ class Translator(object):
         match node:
             case (".var", ("INT", register), ("WORD", name),
                   ("WORD", descriptor), signature):
-                cf.add_var(None, None, name, descriptor, _optional(signature),
-                           register)
+                cf.add_var(None, None, name, convert_dots(descriptor),
+                           _optional(signature), register)
             case (".var", ("INT", register), ("WORD", name),
                   ("WORD", descriptor), signature, ("WORD", start),
                   ("WORD", end)):
-                cf.add_var(start, end, name, descriptor, _optional(signature),
-                           register)
+                cf.add_var(start, end, name, convert_dots(descriptor),
+                           _optional(signature), register)
             case (".var", ("INT", register), ("WORD", name),
                   ("WORD", descriptor), signature, ("INT", start),
                   ("INT", end)):
-                cf.add_var_offsets(start, end, name, descriptor,
+                cf.add_var_offsets(start, end, name, convert_dots(descriptor),
                                    _optional(signature), register)
             case ((".limit", "locals"), ("INT", n)):
                 cf.set_var_size(n)
@@ -393,6 +407,8 @@ class Translator(object):
                     pass
                 case (kind, ("WORD", type_), ("INT", n), _):
                     value = str(n)
+            if type_ == "Object" and value is not None:
+                value = convert_dots(value)     # a class name
             if kind == "locals":
                 cf.plant_stack_locals(type_, value)
             else:

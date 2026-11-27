@@ -5,6 +5,17 @@ pytunia is a Python port of Jasmin 2.4, the assembler for the JVM. It turns
 the original `jasmin.jar`. That is the one hard requirement: every change must
 keep the class files identical. Error messages do *not* have to match Jasmin's.
 
+The one deliberate exception (README, "Dots in class names"): class names may
+be written with dots (`java.lang.Object`) everywhere, also in descriptors.
+Jasmin converts the dots to slashes only in some places and copies them into
+the class file elsewhere, which makes it invalid; pytunia converts them
+everywhere except in generic signatures (`.signature`) and strings. So only
+sources for which Jasmin writes invalid class files give different output.
+The conversion happens with `convert_dots` where names enter: in
+translator.py (like Jasmin's parser actions), in the `plant_*` methods of
+classfile.py (operands of instructions) and in jas/annotation.py (`c`
+values). `tests/test_dots.py` tests it.
+
 It needs Python 3.12+ and one dependency, the parser generator
 [Larkita](https://github.com/karlstroetmann/Larkita) (by the same author as
 pytunia).
@@ -30,6 +41,7 @@ tests/
   expected/        results of jasmin.jar per case (generated, do not edit by hand)
   expected_errors.py  line of the first error for every case with errors
   test_api.py, test_cli.py, make_expected.py
+  test_dots.py     the extension "Dots in class names" (no jasmin.jar results)
 tools/fuzz_compare.py   differential fuzzing against jasmin.jar
 ```
 

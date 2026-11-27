@@ -168,6 +168,10 @@ class AnnotationElement(object):
                 cp = LongCP(int(value))
         elif sign in (TYPE_STRING, TYPE_CLASS, TYPE_ENUM):
             if isinstance(value, str):
+                if sign == TYPE_CLASS:
+                    # a descriptor: pytunia converts its dots to slashes,
+                    # Jasmin 2.4 does not (see README)
+                    value = value.replace('.', '/')
                 cp = AsciiCP(value)
         elif sign == TYPE_ANNOT:
             if isinstance(value, Annotation):

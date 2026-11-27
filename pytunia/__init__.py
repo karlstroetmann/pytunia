@@ -30,7 +30,7 @@ from .main import VERSION as JASMIN_VERSION
 
 # the version of pytunia (JASMIN_VERSION is the version of Jasmin that
 # pytunia reproduces)
-__version__ = "0.2"
+__version__ = "0.3"
 
 __all__ = ["assemble", "assemble_string", "AssemblyError", "Diagnostic",
            "ClassFile", "JASMIN_VERSION"]

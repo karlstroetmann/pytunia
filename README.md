@@ -5,7 +5,9 @@
 pytunia is a Python port of [Jasmin 2.4](https://jasmin.sourceforge.net/).
 It translates assembly code for the Java Virtual Machine (`.j` files) into
 Java class files, and it produces **byte-for-byte the same class files** as
-the original `jasmin.jar`.
+the original `jasmin.jar`. There is one extension: class names can be
+written with dots, e.g. `java.lang.Object` instead of `java/lang/Object`
+(see [Dots in class names](#dots-in-class-names)).
 
 pytunia is a library written in pure Python. It needs Python 3.12 or newer
 and the parser generator [Larkita](https://github.com/karlstroetmann/Larkita),
@@ -36,6 +38,21 @@ pip install git+https://github.com/karlstroetmann/pytunia
     getstatic java/lang/System/out Ljava/io/PrintStream;
     ldc "Hello, World!"
     invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+    return
+.end method
+```
+
+The same program can also be written with dots:
+
+```
+.class public HelloWorld
+.super java.lang.Object
+
+.method public static main([Ljava.lang.String;)V
+    .limit stack 2
+    getstatic java.lang.System.out Ljava.io.PrintStream;
+    ldc "Hello, World!"
+    invokevirtual java.io.PrintStream.println(Ljava.lang.String;)V
     return
 .end method
 ```
@@ -170,8 +187,36 @@ change the output. For example:
 * `ldc2_w 0.1` stores the *float* value 0.1f as a double. Write `0.1d` to
   get the exact double.
 
+### Dots in class names
+
+The Java Virtual Machine writes class names with slashes (`java/lang/Object`),
+and so do Jasmin's examples. pytunia also accepts the names that Java uses,
+with dots (`java.lang.Object`), everywhere: in directives (`.class`,
+`.super`, `.field`, `.var`, `.stack`, ...), in the operands of instructions
+(`new java.lang.StringBuilder`,
+`getstatic java.lang.System.out Ljava.io.PrintStream;`), and in descriptors
+(`([Ljava.lang.String;)V`). The dots are converted to slashes, so both forms
+give the same class file. The separator between a class and a member of it
+can also be a dot or a slash: `java.lang.Object.<init>()V` and
+`java/lang/Object/<init>()V` are the same method.
+
+Generic signatures (`.signature "..."`) are not converted, because a dot
+separates the name of an inner class there, e.g. `Lpkg/Outer<TT;>.Inner;`.
+Strings are of course not converted either.
+
+Jasmin 2.4 converts the dots only in some places: in `.class`, `.super`,
+`.implements`, `.throws`, `.catch`, `.inner` and `.annotation`, in the
+signatures of methods, and in the method and field references of
+instructions, but not in the descriptor of a field reference. Everywhere
+else, e.g. in `new`, `checkcast`, `ldc` of a class, and in the descriptors
+of `.field` and `.var`, it copies the dots into the class file, which is
+then invalid. Only for these sources does pytunia produce a different class
+file than Jasmin.
+
 ### Known differences
 
+* Class names with dots are converted to slashes in more places than in
+  Jasmin (see [Dots in class names](#dots-in-class-names)).
 * The error messages are different (see [Errors](#errors)). pytunia
   reports at most one syntax error, while Jasmin tries to continue after a
   syntax error.
@@ -248,6 +293,10 @@ class files, standard output, standard error and exit status.
   Java version. For sources with errors, `AssemblyError` must be raised, and
   its first error must refer to the line given in
   `tests/expected_errors.py`.
+* `tests/test_dots.py` checks the extension
+  [Dots in class names](#dots-in-class-names): a source that uses every
+  kind of class name and descriptor must give the same class file when all
+  its slashes are written as dots.
 * `tests/test_cli.py` runs the command line (`python3 -m pytunia`) on every
   case and compares the class files, standard output and exit status with
   those of the Java version, and standard error for the cases without
@@ -271,7 +320,9 @@ python3 tests/make_expected.py ../jasmin-2.4/jasmin.jar
 
 `tools/fuzz_compare.py` runs randomly mutated Jasmin files through both
 versions and reports any file where the class files, the standard output,
-the exit status or the presence of errors differ:
+the exit status or the presence of errors differ. Class files that differ
+because a mutation put a dot into a class name are expected (see
+[Dots in class names](#dots-in-class-names)).
 
 ```
 python3 tools/fuzz_compare.py --jar ../jasmin-2.4/jasmin.jar -n 20 tests/cases/*.j
